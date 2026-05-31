@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Restify — Administração</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>RESTIFY</h1>
+      <span>Admin</span>
+    </div>
+    <nav class="nav-menu">
+      <button class="nav-link active" data-target="dashboard">
+        <span class="icon">📊</span> Dashboard
+      </button>
+      <button class="nav-link" data-target="products">
+        <span class="icon">🍔</span> Produtos
+      </button>
+      <button class="nav-link" data-target="ingredients">
+        <span class="icon">🧅</span> Estoque
+      </button>
+      <a href="../index.html" class="nav-link btn-return">
+        <span class="icon">📱</span> Ver Totem
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    
+    <!-- DASHBOARD VIEW -->
+    <section id="view-dashboard" class="view active">
+      <div class="header-bar">
+        <h2>Dashboard de Vendas</h2>
+        <button id="btn-export-csv" class="btn btn-primary">
+          <span class="icon">📥</span> Exportar CSV
+        </button>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric-card"><h3>Receita Total</h3><div class="value" id="metric-revenue">R$ 0,00</div></div>
+        <div class="metric-card"><h3>Pedidos Concluídos</h3><div class="value" id="metric-orders">0</div></div>
+        <div class="metric-card"><h3>Produto Mais Vendido</h3><div class="value" id="metric-top-product">-</div></div>
+        <div class="metric-card metric-card--warning"><h3>Ingredientes em Baixa</h3><div class="value" id="metric-low-stock">0</div></div>
+      </div>
+      <div class="recent-orders-card">
+        <h3>Últimos Pedidos</h3>
+        <div class="table-responsive">
+          <table class="table">
+            <thead><tr><th>ID</th><th>Data</th><th>Itens</th><th>Tipo</th><th>Total</th></tr></thead>
+            <tbody id="orders-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUCTS VIEW -->
+    <section id="view-products" class="view">
+      <div class="header-bar">
+        <h2>Gerenciar Produtos</h2>
+        <button id="btn-new-product" class="btn btn-primary">
+          <span class="icon">➕</span> Novo Produto
+        </button>
+      </div>
+      <div class="products-admin-grid" id="products-admin-grid"></div>
+    </section>
+
+    <!-- INGREDIENTS / STOCK VIEW -->
+    <section id="view-ingredients" class="view">
+      <div class="header-bar">
+        <h2>Estoque de Ingredientes</h2>
+        <button id="btn-new-ingredient" class="btn btn-primary">
+          <span class="icon">➕</span> Novo Ingrediente
+        </button>
+      </div>
+      <div class="table-responsive">
+        <table class="table" id="ingredients-table">
+          <thead><tr><th style="width:50px">Foto</th><th>Nome</th><th>Preço</th><th>Categorias</th><th>Estoque</th><th>Status</th><th style="width:180px">Ações</th></tr></thead>
+          <tbody id="ingredients-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: ADD/EDIT PRODUCT -->
+  <div class="modal-overlay" id="product-modal">
+    <div class="modal-box modal-box--wide">
+      <div class="modal-header">
+        <h3 id="modal-title">Novo Produto</h3>
+        <button class="btn-close" id="btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="product-form">
+          <input type="hidden" id="prod-id">
+          
+          <div class="form-group">
+            <label for="prod-name">Nome do Produto</label>
+            <input type="text" id="prod-name" required placeholder="Ex: X-Bacon Supremo">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="prod-price">Preço (R$)</label>
+              <input type="number" step="0.01" id="prod-price" required placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label for="prod-cat">Categoria</label>
+              <select id="prod-cat" required>
+                <option value="comida">Comida (Lanches)</option>
+                <option value="promos">Promoção</option>
+                <option value="acomp">Acompanhamento</option>
+                <option value="bebidas">Bebidas</option>
+                <option value="sobremesas">Sobremesas</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="prod-img">URL da Imagem</label>
+            <input type="url" id="prod-img" required placeholder="https://exemplo.com/imagem.jpg">
+          </div>
+          <div class="image-preview" id="image-preview"><span>Pré-visualização</span></div>
+
+          <!-- INGREDIENT SELECTOR -->
+          <div class="form-group" style="margin-top:20px">
+            <label>Ingredientes do Produto</label>
+            <small>Selecione os ingredientes que compõem este produto e a quantidade de cada um. Isso será descontado automaticamente do estoque a cada venda.</small>
+            <div class="ingredient-selector" id="ingredient-selector">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- PRICE ESTIMATION -->
+          <div class="estimate-box" id="estimate-box" style="display:none">
+            <h4>💡 Estimativa de Preço</h4>
+            <div class="estimate-row"><span>Custo dos Ingredientes</span><span id="est-custo">R$ 0,00</span></div>
+            <div class="estimate-row"><span>Mão de Obra (~40%)</span><span id="est-mao">R$ 0,00</span></div>
+            <div class="estimate-row"><span>Margem de Lucro (~80%)</span><span id="est-margem">R$ 0,00</span></div>
+            <div class="estimate-row estimate-row--total"><span>Preço Sugerido</span><span id="est-total">R$ 0,00</span></div>
+            <button type="button" class="btn btn-secondary btn-use-estimate" id="btn-use-estimate">Usar este preço</button>
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-modal">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-product" form="product-form">Salvar Produto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD/EDIT INGREDIENT -->
+  <div class="modal-overlay" id="ingredient-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="ing-modal-title">Novo Ingrediente</h3>
+        <button class="btn-close" id="btn-close-ing-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="ingredient-form">
+          <input type="hidden" id="ing-id">
+          <div class="form-group">
+            <label for="ing-name">Nome do Ingrediente</label>
+            <input type="text" id="ing-name" required placeholder="Ex: Queijo Cheddar">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ing-price">Preço Adicional (R$)</label>
+              <input type="number" step="0.01" id="ing-price" required placeholder="0.00">
+              <small>Use 0 se for incluso no produto.</small>
+            </div>
+            <div class="form-group">
+              <label for="ing-stock">Estoque (unidades)</label>
+              <input type="number" id="ing-stock" required placeholder="100" min="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Disponível nas Categorias</label>
+            <div class="checkbox-group" id="ing-cats-group">
+              <label class="checkbox-label"><input type="checkbox" value="comida"> Comida</label>
+              <label class="checkbox-label"><input type="checkbox" value="promos"> Promoções</label>
+              <label class="checkbox-label"><input type="checkbox" value="acomp"> Acompanhamentos</label>
+              <label class="checkbox-label"><input type="checkbox" value="bebidas"> Bebidas</label>
+              <label class="checkbox-label"><input type="checkbox" value="sobremesas"> Sobremesas</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="ing-img">URL da Imagem</label>
+            <input type="url" id="ing-img" required placeholder="https://exemplo.com/ingrediente.jpg">
+          </div>
+          <div class="image-preview" id="ing-image-preview"><span>Pré-visualização</span></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-ing-modal">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-ingredient" form="ingredient-form">Salvar Ingrediente</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
